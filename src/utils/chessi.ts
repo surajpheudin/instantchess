@@ -7,7 +7,7 @@ import {
   PieceName,
 } from "../types";
 import { getPieceColor } from "./helpers";
-import { findPossibleSquares } from "./possibleSquares";
+import { findPossibleSquares, willKingBeInCheck } from "./possibleSquares";
 import { findPossibleCaptureSquare } from "./possibleCaptureSquare";
 import { checkEnPassant } from "./enpassant";
 import {
@@ -195,21 +195,40 @@ const useChessi = () => {
 
   const onPieceSelected = (currentSquare: Coordinates | null) => {
     if (currentSquare) {
-      const pSquares = findPossibleSquares(
-        currentSquare,
+      let pSquares = findPossibleSquares(currentSquare, boardState, gameState);
+      let pCaptureSquare = findPossibleCaptureSquare({
         boardState,
-        gameState
-      );
-      setPossibleSquares(pSquares);
+        currentSquare,
+        lastMove,
+        gameState,
+      });
+      if (boardState[currentSquare]?.endsWith("k")) {
+        pSquares = pSquares.filter(
+          (item) =>
+            lastMove &&
+            !willKingBeInCheck({
+              boardState,
+              currentSquare,
+              destinationSquare: item,
+              gameState,
+              lastMove,
+            })
+        );
 
-      setPossibleCaptureSquares(
-        findPossibleCaptureSquare({
-          boardState,
-          currentSquare,
-          lastMove,
-          gameState,
-        })
-      );
+        pCaptureSquare = pCaptureSquare.filter(
+          (item) =>
+            lastMove &&
+            !willKingBeInCheck({
+              boardState,
+              currentSquare,
+              destinationSquare: item,
+              gameState,
+              lastMove,
+            })
+        );
+      }
+      setPossibleSquares(pSquares);
+      setPossibleCaptureSquares(pCaptureSquare);
     } else {
       setPossibleSquares([]);
       setPossibleCaptureSquares([]);

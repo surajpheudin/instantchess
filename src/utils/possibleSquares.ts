@@ -1,4 +1,11 @@
-import { BoardState, Coordinates, GameState } from "../types";
+import {
+  BoardState,
+  Coordinates,
+  GameState,
+  LastMove,
+  Option,
+  PieceName,
+} from "../types";
 import { isSquareBlocked } from "./blockedSquare";
 import { isLongCastlingPossible, isShortCastlingPossible } from "./castling";
 import {
@@ -6,6 +13,7 @@ import {
   getPieceColor,
   getXYCoordinates,
 } from "./helpers";
+import { findPossibleCaptureSquare } from "./possibleCaptureSquare";
 
 const findBlackPawnPossibleSquares = (
   currentSquare: Coordinates,
@@ -218,6 +226,43 @@ const findQueenPossibleSquares = (
     ...findBishopPossibleSquares(currentSquare, boardState),
     ...findRookPossibleSquares(currentSquare, boardState),
   ];
+};
+
+export const willKingBeInCheck = ({
+  boardState,
+  currentSquare,
+  destinationSquare,
+  gameState,
+  lastMove,
+}: Option & { gameState: GameState; lastMove: LastMove }) => {
+  const newBoardState = structuredClone(boardState);
+  const cPiece = boardState[currentSquare];
+  newBoardState[destinationSquare] = cPiece;
+  newBoardState[currentSquare] = null as unknown as PieceName;
+
+  const cColor = getPieceColor(cPiece);
+  const oppositeColor = cColor === "white" ? "b" : "w";
+  const oppositePieceSquares = Object.entries(newBoardState).reduce(
+    (acc, [square, piece]) => {
+      if (piece && piece.startsWith(oppositeColor)) {
+        acc.push(square as Coordinates);
+      }
+      return acc;
+    },
+    [] as Coordinates[]
+  );
+  console.log("oppositePieceSquares", oppositePieceSquares);
+
+  return oppositePieceSquares.some((item) => {
+    const pSquares = findPossibleCaptureSquare({
+      currentSquare: item,
+      boardState: newBoardState,
+      gameState,
+      lastMove,
+    });
+    if (pSquares.includes(destinationSquare)) return true;
+    return false;
+  });
 };
 
 const findKingPossibleSquares = (
