@@ -1,17 +1,17 @@
 import { useState } from "react";
-import { Coordinates } from "./types";
-import useChessi from "./utils/chessi";
+import { Coordinate } from "./types";
+import useChessi from "./react/chessi";
 import { getPieceColor } from "./utils/helpers";
 const ARRAY_OF_EIGHT = new Array(8).fill(0);
 
 function App() {
-  const [movePoint, setMovePoint] = useState<Coordinates | null>(null);
+  const [movePoint, setMovePoint] = useState<Coordinate | null>(null);
   const {
     boardState,
     gameState,
     possibleSquares,
     possibleCaptureSquares,
-    onMove,
+    handleMove,
     onPieceSelected,
   } = useChessi();
 
@@ -26,11 +26,10 @@ function App() {
       >
         {ARRAY_OF_EIGHT.map((_, i) =>
           ARRAY_OF_EIGHT.map((_, j) => {
-            const coordinates: Coordinates = `${i}${j}`;
-            const isPossible =
-              movePoint && possibleSquares.includes(coordinates);
+            const coordinates: Coordinate = `${i}${j}`;
+            const isPossible = possibleSquares.includes(coordinates);
             const isPossibleCapture =
-              movePoint && possibleCaptureSquares.includes(coordinates);
+              possibleCaptureSquares.includes(coordinates);
             return (
               <div
                 key={coordinates}
@@ -56,7 +55,7 @@ function App() {
                       setMovePoint(coordinates);
                       onPieceSelected(coordinates);
                     } else {
-                      onMove(movePoint, coordinates);
+                      handleMove(movePoint, coordinates);
                       setMovePoint(null);
                       onPieceSelected(null);
                     }

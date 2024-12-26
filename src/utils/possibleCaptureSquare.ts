@@ -1,4 +1,4 @@
-import { Coordinates, GameState, LastMove, Option } from "../types";
+import { Coordinate, GameState, LastMove, Option } from "../types";
 import { checkEnPassant } from "./enpassant";
 import {
   getCleanCoordinates,
@@ -16,7 +16,7 @@ const findPossibleCaptureSquare = ({
   lastMove: LastMove | null;
   gameState: GameState;
 }) => {
-  const doesOppositeColorPieceExist = (destinationSquare: Coordinates) => {
+  const doesOppositeColorPieceExist = (destinationSquare: Coordinate) => {
     const cColor = getPieceColor(boardState[currentSquare]);
     const dPiece = boardState[destinationSquare];
     if (!dPiece) return false;
@@ -43,7 +43,7 @@ const findPossibleCaptureSquare = ({
         lastMove,
       })
     ) {
-      moves.push(`${+lastMove?.from - 10}` as Coordinates);
+      moves.push(`${+lastMove?.from - 10}` as Coordinate);
     }
     return moves;
   } else if (cPiece === "wp") {
@@ -62,7 +62,7 @@ const findPossibleCaptureSquare = ({
         lastMove,
       })
     ) {
-      moves.push(`${+lastMove?.from + 10}` as Coordinates);
+      moves.push(`${+lastMove?.from + 10}` as Coordinate);
     }
     return moves;
   } else {

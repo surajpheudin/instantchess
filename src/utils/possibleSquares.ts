@@ -1,6 +1,6 @@
 import {
   BoardState,
-  Coordinates,
+  Coordinate,
   GameState,
   LastMove,
   Option,
@@ -9,6 +9,7 @@ import {
 import { isSquareBlocked } from "./blockedSquare";
 import { isLongCastlingPossible, isShortCastlingPossible } from "./castling";
 import {
+  addZeroPrefix,
   getCleanCoordinates,
   getPieceColor,
   getXYCoordinates,
@@ -16,46 +17,44 @@ import {
 import { findPossibleCaptureSquare } from "./possibleCaptureSquare";
 
 const findBlackPawnPossibleSquares = (
-  currentSquare: Coordinates,
+  currentSquare: Coordinate,
   boardState: BoardState
 ) => {
-  const squares = [`${+currentSquare + 10}` as Coordinates];
+  const squares = [`${+currentSquare + 10}` as Coordinate];
   if (
     currentSquare.startsWith("1") &&
-    !boardState[`${+currentSquare + 10}` as Coordinates]
+    !boardState[`${+currentSquare + 10}` as Coordinate] &&
+    !boardState[`${+currentSquare + 20}` as Coordinate]
   ) {
-    squares.push(`${+currentSquare + 20}` as Coordinates);
+    squares.push(`${+currentSquare + 20}` as Coordinate);
   }
   return getCleanCoordinates(squares);
 };
 
 const findWhitePawnPossibleSquares = (
-  currentSquare: Coordinates,
+  currentSquare: Coordinate,
   boardState: BoardState
 ) => {
-  const newCoordinates = `${+currentSquare - 10}`;
-  const squares = [
-    newCoordinates.length === 1
-      ? (`0${newCoordinates}` as Coordinates)
-      : (newCoordinates as Coordinates),
-  ];
+  const newCoordinates = `${+currentSquare - 10}` as Coordinate;
+  const squares = [addZeroPrefix(newCoordinates)];
   if (
     currentSquare.startsWith("6") &&
-    !boardState[`${+currentSquare - 10}` as Coordinates]
+    !boardState[`${+currentSquare - 10}` as Coordinate] &&
+    !boardState[`${+currentSquare - 20}` as Coordinate]
   ) {
-    squares.push(`${+currentSquare - 20}` as Coordinates);
+    squares.push(`${+currentSquare - 20}` as Coordinate);
   }
   return getCleanCoordinates(squares);
 };
 
 const findRookPossibleSquares = (
-  currentSquare: Coordinates,
+  currentSquare: Coordinate,
   boardState: BoardState,
   variant?: "right" | "left" | "down" | "up"
 ) => {
   const [x, y] = getXYCoordinates(currentSquare);
 
-  const filter = (squares: Coordinates[]) => {
+  const filter = (squares: Coordinate[]) => {
     return squares.filter((item) => {
       return !isSquareBlocked({
         boardState,
@@ -75,7 +74,7 @@ const findRookPossibleSquares = (
     .map((_, i) => `${Math.abs(x - (i + 1))}${y}` as const);
   const down = new Array(7).fill(0).map((_, i) => `${x + i + 1}${y}` as const);
 
-  let result: Coordinates[] = [];
+  let result: Coordinate[] = [];
   switch (variant) {
     case "left":
       result = left;
@@ -107,10 +106,10 @@ const findRookPossibleSquares = (
 };
 
 const findKnightPossibleSquares = (
-  currentSquare: Coordinates,
+  currentSquare: Coordinate,
   boardState: BoardState
 ) => {
-  const filter = (squares: Coordinates[]) => {
+  const filter = (squares: Coordinate[]) => {
     return squares.filter((item) => {
       return !isSquareBlocked({
         boardState,
@@ -154,13 +153,13 @@ const findKnightPossibleSquares = (
 };
 
 const findBishopPossibleSquares = (
-  currentSquare: Coordinates,
+  currentSquare: Coordinate,
   boardState: BoardState,
   variant?: "right-up" | "left-up" | "right-down" | "left-down"
-): Coordinates[] => {
+): Coordinate[] => {
   const [x, y] = getXYCoordinates(currentSquare);
 
-  const filter = (squares: Coordinates[]) => {
+  const filter = (squares: Coordinate[]) => {
     return squares.filter((item) => {
       return !isSquareBlocked({
         boardState,
@@ -182,7 +181,7 @@ const findBishopPossibleSquares = (
     .fill(0)
     .map((_, i) => `${x + i + 1}${y + i + 1}` as const);
 
-  let result: Coordinates[] = [];
+  let result: Coordinate[] = [];
 
   switch (variant) {
     case "right-up":
@@ -219,7 +218,7 @@ const findBishopPossibleSquares = (
 };
 
 const findQueenPossibleSquares = (
-  currentSquare: Coordinates,
+  currentSquare: Coordinate,
   boardState: BoardState
 ) => {
   return [
@@ -234,7 +233,7 @@ export const willKingBeInCheck = ({
   destinationSquare,
   gameState,
   lastMove,
-}: Option & { gameState: GameState; lastMove: LastMove }) => {
+}: Option & { gameState: GameState; lastMove: LastMove | null }) => {
   const newBoardState = structuredClone(boardState);
   const cPiece = boardState[currentSquare];
   newBoardState[destinationSquare] = cPiece;
@@ -245,13 +244,18 @@ export const willKingBeInCheck = ({
   const oppositePieceSquares = Object.entries(newBoardState).reduce(
     (acc, [square, piece]) => {
       if (piece && piece.startsWith(oppositeColor)) {
-        acc.push(square as Coordinates);
+        acc.push(square as Coordinate);
       }
       return acc;
     },
-    [] as Coordinates[]
+    [] as Coordinate[]
   );
-  console.log("oppositePieceSquares", oppositePieceSquares);
+
+  const kingSquare = Object.entries(newBoardState).find(
+    ([, piece]) =>
+      (cColor === "white" && piece === "wk") ||
+      (cColor === "black" && piece === "bk")
+  )?.[0];
 
   return oppositePieceSquares.some((item) => {
     const pSquares = findPossibleCaptureSquare({
@@ -260,17 +264,17 @@ export const willKingBeInCheck = ({
       gameState,
       lastMove,
     });
-    if (pSquares.includes(destinationSquare)) return true;
+    if (pSquares.includes(kingSquare as Coordinate)) return true;
     return false;
   });
 };
 
 const findKingPossibleSquares = (
-  currentSquare: Coordinates,
+  currentSquare: Coordinate,
   boardState: BoardState,
   gameState: GameState
 ) => {
-  const filter = (squares: Coordinates[]) => {
+  const filter = (squares: Coordinate[]) => {
     return squares.filter((item) => {
       return !isSquareBlocked({
         boardState,
@@ -341,13 +345,14 @@ const findKingPossibleSquares = (
 };
 
 const findPossibleSquares = (
-  currentSquare: Coordinates,
+  currentSquare: Coordinate,
   boardState: BoardState,
   gameState: GameState
 ) => {
   const currentPiece = boardState[currentSquare];
+  if (!currentPiece) return [];
 
-  let result: Coordinates[] = [];
+  let result: Coordinate[] = [];
   switch (true) {
     case currentPiece === "wp":
       result = findWhitePawnPossibleSquares(currentSquare, boardState);

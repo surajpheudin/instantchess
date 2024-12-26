@@ -1,4 +1,4 @@
-import { BoardState, Coordinates, GameState, Option } from "../types";
+import { BoardState, Coordinate, GameState, Option } from "../types";
 import { addZeroPrefix, getPieceColor } from "./helpers";
 
 interface IIsCastlingPossible extends Omit<Option, "destinationSquare"> {
@@ -14,7 +14,7 @@ const validateCastling = ({
   variant: "short" | "long";
 }) => {
   const cPiece = boardState[currentSquare];
-  if (!cPiece.endsWith("k")) return false;
+  if (!cPiece || !cPiece.endsWith("k")) return false;
 
   const cColor = getPieceColor(cPiece);
   let modes: string[] = [];
@@ -53,7 +53,7 @@ const isShortCastlingPossible = ({
   }).fill(0);
 
   const hasBetweenPieces = arr.some((_, i) => {
-    const dSquare = (+currentSquare + (i + 1)).toString() as Coordinates;
+    const dSquare = (+currentSquare + (i + 1)).toString() as Coordinate;
     return !!boardState[addZeroPrefix(dSquare)];
   });
   if (hasBetweenPieces) return false;
@@ -79,117 +79,111 @@ const isLongCastlingPossible = ({
   }).fill(0);
 
   const hasBetweenPieces = arr.some((_, i) => {
-    const dSquare = (+currentSquare - (i + 1)).toString() as Coordinates;
+    const dSquare = (+currentSquare - (i + 1)).toString() as Coordinate;
     return !!boardState[addZeroPrefix(dSquare)];
   });
   if (hasBetweenPieces) return false;
   return true;
 };
 
-const removeCastlingRights = ({
+const getCastlingRights = ({
   currentSquare,
   boardState,
-  setGameState,
+  gameState,
 }: {
-  currentSquare: Coordinates;
+  currentSquare: Coordinate;
   boardState: BoardState;
-  setGameState: React.Dispatch<React.SetStateAction<GameState>>;
+  gameState: GameState;
 }) => {
   const cPiece = boardState[currentSquare];
+  if (!cPiece) return;
   if (!cPiece.endsWith("r") && !cPiece.endsWith("k")) return;
 
   if (cPiece.endsWith("r")) {
     switch (currentSquare) {
       case "70":
-        setGameState((prev) => ({
-          ...prev,
+        return {
           whiteCastlingRights:
-            prev.whiteCastlingRights === "both" ? "short" : null,
-        }));
-        break;
+            gameState.whiteCastlingRights === "both"
+              ? ("short" as const)
+              : null,
+        };
 
       case "77":
-        setGameState((prev) => ({
-          ...prev,
+        return {
           whiteCastlingRights:
-            prev.whiteCastlingRights === "both" ? "long" : null,
-        }));
-        break;
+            gameState.whiteCastlingRights === "both" ? ("long" as const) : null,
+        };
 
       case "00":
-        setGameState((prev) => ({
-          ...prev,
+        return {
           blackCastlingRights:
-            prev.blackCastlingRights === "both" ? "short" : null,
-        }));
-        break;
+            gameState.blackCastlingRights === "both"
+              ? ("short" as const)
+              : null,
+        };
 
       case "07":
-        setGameState((prev) => ({
-          ...prev,
+        return {
           blackCastlingRights:
-            prev.blackCastlingRights === "both" ? "long" : null,
-        }));
-        break;
-
-      default:
-        break;
+            gameState.blackCastlingRights === "both" ? ("long" as const) : null,
+        };
     }
   } else if (cPiece.endsWith("k")) {
     if (currentSquare === "74") {
-      setGameState((prev) => ({
-        ...prev,
+      return {
         whiteCastlingRights: null,
-      }));
+      };
     } else if (currentSquare === "04") {
-      setGameState((prev) => ({
-        ...prev,
+      return {
         blackCastlingRights: null,
-      }));
+      };
     }
   }
+
+  return;
 };
 
 const handleCastlingMove = ({
+  boardState,
   currentSquare,
   destinationSquare,
-  setBoardState,
-  setGameState,
   variant,
+  gameState,
 }: {
-  currentSquare: Coordinates;
-  destinationSquare: Coordinates;
-  setBoardState: React.Dispatch<React.SetStateAction<BoardState>>;
-  setGameState: React.Dispatch<React.SetStateAction<GameState>>;
+  boardState: BoardState;
+  currentSquare: Coordinate;
+  destinationSquare: Coordinate;
   variant: "long" | "short";
+  gameState: GameState;
 }) => {
   const rookSquare = addZeroPrefix(
     variant === "short"
-      ? ((+currentSquare + 3)?.toString() as Coordinates)
-      : ((+currentSquare - 4)?.toString() as Coordinates)
+      ? ((+currentSquare + 3)?.toString() as Coordinate)
+      : ((+currentSquare - 4)?.toString() as Coordinate)
   );
 
   const rookDestinationSquare = addZeroPrefix(
     variant === "short"
-      ? ((+currentSquare + 1)?.toString() as Coordinates)
-      : ((+currentSquare - 1)?.toString() as Coordinates)
+      ? ((+currentSquare + 1)?.toString() as Coordinate)
+      : ((+currentSquare - 1)?.toString() as Coordinate)
   );
-  setBoardState((prev) => ({
-    ...prev,
+  const newBoardState: BoardState = {
     [currentSquare]: null,
     [rookSquare]: null,
-    [destinationSquare]: prev[currentSquare],
-    [rookDestinationSquare]: prev[rookSquare],
-  }));
-  setGameState((prev) => ({
-    ...prev,
-    turn: prev.turn === "white" ? "black" : "white",
-  }));
+    [destinationSquare]: boardState[currentSquare],
+    [rookDestinationSquare]: boardState[rookSquare],
+  };
+  const newGameState: Pick<GameState, "turn"> = {
+    turn: gameState.turn === "white" ? "black" : "white",
+  };
+
+  return { boardState: newBoardState, gameState: newGameState };
 };
 
 export {
   isShortCastlingPossible,
   isLongCastlingPossible,
-  removeCastlingRights,
+  getCastlingRights,
   handleCastlingMove,
 };

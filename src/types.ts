@@ -1,6 +1,6 @@
-export type Coordinates = `${number}${number}`;
+export type Coordinate = `${number}${number}`;
 export type XYCoordinates = [number, number];
-export type BoardState = Record<Coordinates, PieceName>;
+export type BoardState = Record<Coordinate, PieceName | null>;
 export type PieceName =
   | "wr"
   | "wn"
@@ -24,11 +24,11 @@ export type GameState = {
 
 export type Option = {
   boardState: BoardState;
-  currentSquare: Coordinates;
-  destinationSquare: Coordinates;
+  currentSquare: Coordinate;
+  destinationSquare: Coordinate;
 };
 
 export type LastMove = {
-  from: Coordinates;
-  to: Coordinates;
+  from: Coordinate;
+  to: Coordinate;
 };

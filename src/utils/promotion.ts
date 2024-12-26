@@ -1,4 +1,4 @@
-import { BoardState, GameState, Option, PieceName } from "../types";
+import { GameState, Option, PieceName } from "../types";
 import { getPieceColor } from "./helpers";
 
 const isPromotionPossible = ({
@@ -7,7 +7,7 @@ const isPromotionPossible = ({
   destinationSquare,
 }: Option) => {
   const cPiece = boardState[currentSquare];
-  if (!cPiece.endsWith("p")) return false;
+  if (!cPiece || !cPiece.endsWith("p")) return false;
 
   const cColor = getPieceColor(cPiece);
 
@@ -22,12 +22,10 @@ const handlePromotion = ({
   currentSquare,
   destinationSquare,
   promotionPiece,
-  setBoardState,
-  setGameState,
+  gameState,
 }: Option & {
+  gameState: GameState;
   promotionPiece: Omit<PieceName, "wp" | "bp" | "wk" | "bk">;
-  setGameState: React.Dispatch<React.SetStateAction<GameState>>;
-  setBoardState: React.Dispatch<React.SetStateAction<BoardState>>;
 }) => {
   if (["wp", "bp", "wk", "bk"].includes(promotionPiece as PieceName)) {
     throw Error("Invalid promotion piece.");
@@ -39,16 +37,16 @@ const handlePromotion = ({
   if (cColor !== dColor) {
     throw Error("Invalid promotion piece color.");
   }
-  setBoardState((prev) => ({
-    ...prev,
+  const newBoardState = {
     [currentSquare]: null,
     [destinationSquare]: promotionPiece,
-  }));
+  };
 
-  setGameState((prev) => ({
-    ...prev,
-    turn: prev.turn === "white" ? "black" : "white",
-  }));
+  const newGameState: Pick<GameState, "turn"> = {
+    turn: gameState.turn === "white" ? "black" : "white",
+  };
+
+  return { boardState: newBoardState, gameState: newGameState };
 };
 
 export { isPromotionPossible, handlePromotion };

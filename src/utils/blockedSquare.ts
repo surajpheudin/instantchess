@@ -19,6 +19,8 @@ function isSquareBlocked(options: Option) {
     return true;
   }
 
+  if (!currentPiece) return;
+
   switch (true) {
     case ["wk"].includes(currentPiece):
       return (

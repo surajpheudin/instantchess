@@ -1,4 +1,4 @@
-import { BoardState, Coordinates, LastMove } from "../types";
+import { BoardState, Coordinate, LastMove } from "../types";
 
 const checkEnPassant = ({
   currentSquare,
@@ -6,13 +6,14 @@ const checkEnPassant = ({
   boardState,
 }: {
   boardState: BoardState;
-  currentSquare: Coordinates;
+  currentSquare: Coordinate;
   lastMove: LastMove | null;
 }) => {
   if (!lastMove) return false;
 
   // 1. Check if last move was pawn move.
   const lastMovedPiece = boardState[lastMove.to];
+  if (!lastMovedPiece) return false;
   if (!["wp", "bp"].includes(lastMovedPiece)) return false;
 
   // 2. Check if the piece ready to move is white or black pawn.
